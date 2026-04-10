@@ -1,12 +1,28 @@
 # 配置
 
-本程序的配置使用 YAML 文件格式。配置文件为 `config.yaml`，位于程序的根目录下。例子可参考 [config.yaml](https://github.com/SubConv/SubConv/blob/main/config.yaml)。
+仓库根目录下的 `config.yaml.example` 描述了默认的运行时参数。如果你需要自定义，请在自己的部署环境或 fork 仓库里创建 `config.yaml`。运行时模板使用 YAML 格式，位于仓库根目录的 `template/` 下，当前内置 `template/zju.yaml` 和 `template/general.yaml` 两个文件。
 
-如果你是从源码运行，可以使用 `uv run python api.py -G default > config.yaml` 生成默认配置文件；如果需要使用 ZJU 的配置文件，可以使用 `uv run python api.py -G zju > config.yaml`。
+最重要的参数是 `DEFAULT_TEMPLATE`，默认值为 `zju`。当请求里不传 `template` 查询参数时，服务就会使用 `DEFAULT_TEMPLATE` 指定的模板。
 
-如果你使用的是发布版二进制文件，也可以继续使用 `./api -G default > config.yaml` 或 `./api -G zju > config.yaml`。
+如果默认模板文件在本地不存在，程序会直接报错并停止启动。
 
-## 配置项
+如果你是从源码运行，请把你的改动放在 `config.yaml` 里。如果你使用的是发布版二进制文件，请确保 `config.yaml.example` 与解压后的 `template/` 目录和 `api` 放在一起；如果需要自定义运行时参数，再额外提供 `config.yaml`。
+
+## 运行时配置项
+
+- `HOST`：后端绑定地址
+- `PORT`：后端监听端口
+- `DEFAULT_TEMPLATE`：当 `/sub` 或 `/proxy` 不带 `template` 查询参数时使用的模板
+
+示例 `config.yaml`：
+
+```yaml
+HOST: 0.0.0.0
+PORT: 8080
+DEFAULT_TEMPLATE: zju
+```
+
+## 模板文件项
 
 - `HEAD`: 节点信息之前的配置，如
     ```yaml

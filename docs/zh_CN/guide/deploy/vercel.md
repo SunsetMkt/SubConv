@@ -33,8 +33,8 @@ example: suppose you need `example.is-an.app`
 
 ## 步骤
 ### Fork 这个仓库
-1. Fork [SubConv](https://github.com/SubConv/SubConv)。如果需要ZJU配置，请fork [SubConv-4-ZJU](https://github.com/SubConv/SubConv-4-ZJU)。你可以在新标签页中打开它。
-2. （可选）修改配置文件 `config.yaml`。详细配置项请参考[配置](../configuration/overview)
+1. Fork [SubConv](https://github.com/SubConv/SubConv)。
+2. 如果你需要自定义运行时配置，就在你 fork 后的仓库里创建 `config.yaml` 并修改它。详细模板项请参考[配置](../configuration/overview)
 
 ### 部署 SubConv
 然后你应该在 Vercel 上部署它，并添加你自己的域名（我称之为 sun-conv 的域名）。如果你熟悉 Vercel，可以跳过这部分。  

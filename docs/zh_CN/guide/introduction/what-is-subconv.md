@@ -8,7 +8,7 @@
 
 它易于部署，可以部署在 [Vercel](https://vercel.com)、Docker 或您自己的 VPS 上。
 
-我们提供了一般用户的配置文件和ZJU配置文件
+我们提供内置的 `zju` 和 `general` 两套模板，并默认使用 `zju`
 
 ## 截图
 
@@ -25,4 +25,4 @@
 - 多机场用户提供了支持
 - 剩余流量和总流量的显示（单机场的时候才有用，需要你的机场和你用的Clash同时支持，已知Clash for Windows, Clash Verge, Stash, Clash Meta for Android等已支持）
 - 提供了将订阅转换为 proxy-provider 输出的 API
-- 支持配置文件
+- 支持模板文件

@@ -1,5 +1,5 @@
 # Proxy Groups
-除了 `🚀 节点选择` 组为硬编码以外，其他 proxy-groups 都可以通过配置文件 `config.yaml` 进行自定义。proxy-groups根据 `config.yaml` 中的 `CUSTOM_PROXY_GROUP` 生成。
+除了 `🚀 节点选择` 组为硬编码以外，其他 proxy-groups 都可以通过 `template/` 目录下的 YAML 模板文件进行自定义。proxy-groups 根据当前所选模板中的 `CUSTOM_PROXY_GROUP` 生成。
 
 ## 自定义 proxy-groups
 下面是一个有效的 `CUSTOM_PROXY_GROUP` 的例子：  
