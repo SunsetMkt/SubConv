@@ -1,11 +1,13 @@
 import os
 import re
+from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.requests import Request
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
 from urllib.parse import urlencode
 
 from . import config
@@ -15,7 +17,14 @@ from .converter import ConvertsV2Ray
 
 DISALLOW_ROBOTS = bool(eval(os.environ.get("DISALLOW_ROBOTS", "False")))
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    config.validate_templates_on_startup()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 STATIC_DIR = "mainpage/dist"
 if os.path.isdir(STATIC_DIR):
@@ -35,6 +44,14 @@ async def robots():
     if DISALLOW_ROBOTS:
         return Response(content="User-agent: *\nDisallow: /", media_type="text/plain")
     return Response(status_code=404)
+
+
+@app.get("/config")
+async def runtime_config():
+    return {
+        "defaultTemplate": config.default_template_name(),
+        "availableTemplates": config.available_templates(),
+    }
 
 
 @app.get("/provider")
@@ -60,6 +77,8 @@ async def sub(request: Request):
     interval = args.get("interval", "1800")
     short = args.get("short")
     notproxyrule = args.get("npr")
+    template_name = _resolve_template_name(args.get("template"))
+    template_config = await _load_template(template_name)
 
     url_param = args.get("url")
     if url_param is None:
@@ -148,14 +167,18 @@ async def sub(request: Request):
         short=short,
         notproxyrule=notproxyrule,
         base_url=str(request.base_url),
+        template_name=template_name,
+        template_config=template_config,
     )
     return Response(content=result, headers=headers)
 
 
 @app.get("/proxy")
 async def proxy(request: Request, url: str):
+    template_name = _resolve_template_name(request.query_params.get("template"))
+    template_config = await _load_template(template_name)
     is_whitelisted = False
-    for rule in config.configInstance.RULESET:
+    for rule in template_config.RULESET:
         if rule[1] == url:
             is_whitelisted = True
             break
@@ -212,3 +235,23 @@ def _split_sources(source: str) -> tuple[list[str] | None, str | None]:
 
     standalone = "\n".join(standalone_urls) or None
     return (remote_urls or None, standalone)
+
+
+def _resolve_template_name(template_name: str | None) -> str:
+    try:
+        return config.normalize_template_name(template_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+async def _load_template(template_name: str) -> config.TemplateConfig:
+    try:
+        return config.load_runtime_template(template_name)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=500, detail=f"Invalid template file '{template_name}': {exc}"
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

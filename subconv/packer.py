@@ -5,8 +5,8 @@ from typing import Any
 import yaml
 from urllib.parse import urlparse, urlencode
 
-from . import subscription
 from . import config
+from . import subscription
 
 
 ProxyMapping = dict[str, Any]
@@ -23,12 +23,14 @@ async def pack(
     short: str | None,
     notproxyrule: str | None,
     base_url: str,
+    template_name: str,
+    template_config: config.TemplateConfig,
 ) -> str:
     providerProxyNames = await subscription.mkListProxyNames(content)
     result: ProxyMapping = {}
 
     if short is None:
-        result.update(config.configInstance.HEAD)
+        result.update(template_config.HEAD)
 
     proxies: ProxyMapping | None = {"proxies": []}
     proxies_list: list[ProxyMapping] = proxies["proxies"]
@@ -69,7 +71,7 @@ async def pack(
                             "health-check": {
                                 "enable": True,
                                 "interval": 60,
-                                "url": config.configInstance.TEST_URL,
+                                "url": template_config.TEST_URL,
                             },
                         }
                     }
@@ -86,7 +88,7 @@ async def pack(
                             "health-check": {
                                 "enable": True,
                                 "interval": 60,
-                                "url": config.configInstance.TEST_URL,
+                                "url": template_config.TEST_URL,
                             },
                         }
                     }
@@ -105,12 +107,12 @@ async def pack(
         "type": "select",
         "proxies": proxy_select_proxies,
     }
-    for group in config.configInstance.CUSTOM_PROXY_GROUP:
+    for group in template_config.CUSTOM_PROXY_GROUP:
         if group.rule == False:
             proxy_select_proxies.append(group.name)
     proxy_select_proxies.append("DIRECT")
 
-    if len(config.configInstance.CUSTOM_PROXY_GROUP) > 0:
+    if len(template_config.CUSTOM_PROXY_GROUP) > 0:
         proxy_groups_list.append(proxySelect)
 
     subscriptions: list[str] | None = []
@@ -126,7 +128,7 @@ async def pack(
     if len(standby) == 0:
         standby = None
 
-    for group in config.configInstance.CUSTOM_PROXY_GROUP:
+    for group in template_config.CUSTOM_PROXY_GROUP:
         type_ = group.type
         regex = group.regex
 
@@ -145,7 +147,7 @@ async def pack(
                             "🚀 节点选择",
                             *[
                                 _group.name
-                                for _group in config.configInstance.CUSTOM_PROXY_GROUP
+                                for _group in template_config.CUSTOM_PROXY_GROUP
                                 if _group.rule == False
                             ],
                         ],
@@ -162,7 +164,7 @@ async def pack(
                             "🚀 节点选择",
                             *[
                                 _group.name
-                                for _group in config.configInstance.CUSTOM_PROXY_GROUP
+                                for _group in template_config.CUSTOM_PROXY_GROUP
                                 if _group.rule == False
                             ],
                         ],
@@ -177,7 +179,7 @@ async def pack(
                             "🚀 节点选择",
                             *[
                                 _group.name
-                                for _group in config.configInstance.CUSTOM_PROXY_GROUP
+                                for _group in template_config.CUSTOM_PROXY_GROUP
                                 if _group.rule == False
                             ],
                             "DIRECT",
@@ -236,15 +238,15 @@ async def pack(
                 if proxyGroup is not None:
                     if type_ == "load-balance":
                         proxyGroup["strategy"] = "consistent-hashing"
-                        proxyGroup["url"] = config.configInstance.TEST_URL
+                        proxyGroup["url"] = template_config.TEST_URL
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
                     elif type_ == "fallback":
-                        proxyGroup["url"] = config.configInstance.TEST_URL
+                        proxyGroup["url"] = template_config.TEST_URL
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
                     elif type_ == "url-test":
-                        proxyGroup["url"] = config.configInstance.TEST_URL
+                        proxyGroup["url"] = template_config.TEST_URL
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
             else:
@@ -285,7 +287,7 @@ async def pack(
         "format": "text",
         "interval": 86400 * 7,
     }
-    for item in config.configInstance.RULESET:
+    for item in template_config.RULESET:
         rule_url = item[1]
         name = urlparse(rule_url).path.split("/")[-1].split(".")[0]
         while name in rule_map:
@@ -294,7 +296,10 @@ async def pack(
         if rule_url.startswith("[]"):
             continue
         if notproxyrule is None:
-            rule_url = "{}proxy?{}".format(base_url, urlencode({"url": rule_url}))
+            query_params = {"url": rule_url}
+            if template_name != config.default_template_name():
+                query_params["template"] = template_name
+            rule_url = "{}proxy?{}".format(base_url, urlencode(query_params))
 
         rule_provider_map.update(
             {name: {**classical, "path": "./rule/{}.txt".format(name), "url": rule_url}}
