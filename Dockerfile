@@ -42,7 +42,8 @@ COPY --from=builder /app/api.bin /app/api.bin
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/mainpage/dist /app/mainpage/dist
-COPY config.yaml /app/config.yaml
+COPY config.yaml.example /app/config.yaml.example
+COPY template /app/template
 
 EXPOSE 8080
 
